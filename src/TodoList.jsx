@@ -45,7 +45,7 @@ function TodoList() {
             <TodoTable todos={todos} onDelete={deleteTodo}/>
         </>
     );
-    //testi
+
 }
 
 export default TodoList;
