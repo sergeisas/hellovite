@@ -1,13 +1,19 @@
-import { useRef,useState } from "react";
-import { AgGridReact} from "ag-grid-react";
+import { useRef, useState } from "react";
+import { AgGridReact } from "ag-grid-react";
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-material.css"; // Material Design theme
 
 function TodoList() {
     const [desc, setDesc] = useState('');
-    const [date, setDate] = useState('');
+    const [date, setDate] = useState(null);
     const [priority, setPriority] = useState('');
+    const [formattedDate, setFormattedDate] = useState('');
     const [todos, setTodos] = useState([]);
     const gridRef = useRef();
 
@@ -17,13 +23,14 @@ function TodoList() {
         { field: 'date', filter: true, floatingFilter: true }
     ]);
 
-
     const handleDescChange = (event) => {
         setDesc(event.target.value);
     };
 
-    const handleDateChange = (event) => {
-        setDate(event.target.value);
+    const handleDateChange = (value) => {
+        setDate(value);
+        const formatted = value ? value.format('YYYY-MM-DD') : '';
+        setFormattedDate(formatted);
     };
 
     const handlePriorityChange = (event) => {
@@ -31,51 +38,55 @@ function TodoList() {
     };
 
     const addTodo = () => {
-        if (desc.trim() !== '' && date.trim() !== '' && priority.trim() !== '') {
-            setTodos([...todos, { description: desc, date: date, priority: priority }]);
+        if (desc.trim() !== '' && date && priority.trim() !== '') {
+            setTodos([...todos, { description: desc, date: formattedDate, priority: priority }]);
             setDesc('');
-            setDate('');
+            setDate(null);
             setPriority('');
+            setFormattedDate('');
         }
     };
 
-
-
     const handleDelete = () => {
-        setTodos(todos.filter((todos, index) => 
-            index != gridRef.current.getSelectedNodes()[0].id))
-      };
-
+        const selectedNode = gridRef.current.getSelectedNodes()[0];
+        if (selectedNode) {
+            const selectedIndex = selectedNode.rowIndex;
+            const newTodos = [...todos];
+            newTodos.splice(selectedIndex, 1);
+            setTodos(newTodos);
+        }
+    };
     return (
         <>
-            <input
-                placeholder="Description"
-                onChange={handleDescChange}
-                value={desc}
+            <TextField 
+                label="Description" 
+                onChange={handleDescChange} 
+                value={desc} 
             />
-            <input
-                type="text"
-                placeholder="Date (YYYY-MM-DD)"
-                onChange={handleDateChange}
-                value={date}
-            />
-            <input
-                type="text"
-                placeholder="Priority"
-                onChange={handlePriorityChange}
-                value={priority}
-            />
-            <button onClick={addTodo}>Add</button>
-            <button onClick={handleDelete}>Delete</button>
+            <TextField
+                label="Priority" 
+                onChange={handlePriorityChange} 
+                value={priority} 
+            /> 
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                    label="Date"
+                    value={date}
+                    onChange={handleDateChange}
+                    renderInput={(params) => <TextField {...params} />}            
+                />
+            </LocalizationProvider>
+            <Button onClick={addTodo}>Add</Button>
+            <Button onClick={handleDelete}>Delete</Button>
             <div className="ag-theme-material" style={{width: 700, height: 500}}>
-      <AgGridReact 
-        ref={gridRef}
-        onGridReady={ params => gridRef.current = params.api }
-        rowData={todos}
-        columnDefs={columnDefs}
-        rowSelection="single" 
-      />
-    </div>
+                <AgGridReact 
+                    ref={gridRef}
+                    onGridReady={ params => gridRef.current = params.api }
+                    rowData={todos}
+                    columnDefs={columnDefs}
+                    rowSelection="single" 
+                />
+            </div>
         </>
     );
 }
